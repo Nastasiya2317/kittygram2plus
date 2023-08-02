@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'djoser',
     'cats.apps.CatsConfig',
+    # регистрируем приложение для подключения бэкендов
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -128,12 +130,35 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
+        #  доступ ко всему API
         'rest_framework.permissions.IsAuthenticated', 
+        # AllowAny  - всем все можно, IsAuthenticated - только по токену, IsAuthenticatedOrReadOnly  - анонимы могут делать запросы на чтение, IsAdminUser - запросы может делать только админ (user.is_staff = True)
+        'rest_framework.throttling.ScopedRateThrottle', # подключим класс ScopedRateThrottle для создания собственного лимита
     ],
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
+    # делаем ограничение на количество запросов к API
+    'DEFAULT_THROTTLE_CLASSES': [
+        #  регистрируем классы пользователей User и Anon
+        'rest_framework.throttling.UserRateThrottle',
+        # 'rest_framework.throttling.AnonRateThrottle',
+        # Не будем подключать класс AnonRateThrottle глобально.
+        # Подключим его только в тех view-классах или вьюсетах,
+        # где надо установить лимиты для анонимов
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'user': '10000/day',  # Лимит для UserRateThrottle
+        'anon': '1000/day',  # Лимит для AnonRateThrottle
+        # Имена (ключи) для scope придумывает разработчик, 
+        # в меру собственной фантазии
+        'low_request': '1/minute',
+    },
+    # добавим пагинацию на уровне проекта:
+    # работает только для дженериков и вьюсетов ( Для view-классов пагинацию настраивают иначе )
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5,
 }
 
 SIMPLE_JWT = {
